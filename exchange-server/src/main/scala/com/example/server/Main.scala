@@ -1,5 +1,6 @@
-package server
+package com.example.server
 
+import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 
 object Main extends App {
@@ -7,6 +8,8 @@ object Main extends App {
   val host = config.getString("host")
   val port = config.getString("port")
 
-  val server = new Server(host, port)
+  ActorSystem().actorOf(
+    Props(new Server(host, port))
+  )
 
 }

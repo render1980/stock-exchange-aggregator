@@ -2,9 +2,8 @@ name := "stock-exchange-aggregator"
 
 version := "1.0"
 
-scalaVersion := "2.12.2"
+organization := "com.example"
 
-libraryDependencies ++= Seq(
-  "com.typesafe.akka" % "akka-actor_2.11" % "2.5.2",
-  "com.typesafe.akka" % "akka-testkit_2.11" % "2.5.2"
-)
+lazy val client = project.in(file("exchange-client"))
+
+lazy val server = project.in(file("exchange-server"))
