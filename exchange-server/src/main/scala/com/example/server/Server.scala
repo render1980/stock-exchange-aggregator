@@ -24,8 +24,8 @@ class Server(host: String, port: String) extends Actor with ActorLogging {
       log.error(s"CommandFailed: $b")
       context stop self
     case c@Connected(remote, local) ⇒
-      val handler = context.actorOf(Props[ExchangeAggregator])
       log.debug(s"Connected to $remote from $local")
+      val handler = context.actorOf(Props[ExchangeAggregator])
       sender ! Register(handler)
   }
 }

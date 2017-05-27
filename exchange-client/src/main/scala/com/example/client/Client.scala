@@ -5,9 +5,18 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, ActorLogging}
 import akka.io.Tcp._
 import akka.io.{IO, Tcp}
+import akka.util.ByteString
+
+object Client {
+  val ack = "ACK"
+
+  case object MyAck extends Event
+
+}
 
 class Client(remote: InetSocketAddress) extends Actor with ActorLogging {
 
+  import Client._
   import context.system
 
   override def preStart(): Unit = {
@@ -24,12 +33,16 @@ class Client(remote: InetSocketAddress) extends Actor with ActorLogging {
       log.debug(s"Connection with $remote succeeded!")
       sender ! Register(self)
 
+      // send request to server
+      sender() ! Write(ByteString(ack), MyAck)
+
       context become {
         case CommandFailed(w: Write) ⇒
           // O/S buffer was full
           log.error(s"Writing to buffer have failed!")
         case Received(data)          ⇒
-          log.debug(s"Received $data from $remote")
+          val decodedData = data.decodeString(ByteString.UTF_8)
+          log.debug(s"Received $decodedData from $remote")
         case "close"                 ⇒
           log.debug(s"Received Close command")
           sender ! Close
