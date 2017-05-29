@@ -25,14 +25,11 @@ class Client(remote: InetSocketAddress) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case CommandFailed(_: Connect) ⇒
-      //      listener ! "connect failed"
       log.error(s"Connection with $remote have failed!")
       context stop self
     case c@Connected(_, _)         ⇒ {
-      //      listener ! c
       log.debug(s"Connection with $remote succeeded!")
       sender ! Register(self)
-
       // send request to server
       sender() ! Write(ByteString(ack), MyAck)
 
@@ -47,7 +44,6 @@ class Client(remote: InetSocketAddress) extends Actor with ActorLogging {
           log.debug(s"Received Close command")
           sender ! Close
         case _: ConnectionClosed     ⇒
-          //          listener ! "connection closed"
           log.debug(s"Connection closed by server")
           context stop self
       }

@@ -21,12 +21,5 @@ object Main extends App {
   system.actorOf(
     Props(new Server(host, port)), "server"
   )
-//
-//  system.actorOf(
-//    Props(new DataFlowStorage()), "data-flow-storage"
-//  )
 
-//  system.actorOf(
-//    Props(new ExchangeAggregator()), "exchange-aggregator"
-//  )
 }

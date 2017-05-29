@@ -10,7 +10,6 @@ import akka.util.{ByteString, Timeout}
 import com.example.server.DataFlowStorage.Get
 import com.example.server.ExchangeAggregator.GetRecords
 
-import concurrent.ExecutionContext
 
 object ExchangeAggregator {
 
@@ -25,44 +24,33 @@ class ExchangeAggregator extends Actor with ActorLogging {
 
   //  private val resp =
   //    s"""{"ticker": "AAPL","timestamp": "2016-01-01T15:02:00Z","open": 101.1,"high": 101.3,"low": 101,"close": 101,"volume": 1300}"""
-  //
-  //  private val resp2 =
-  //    s"""{"ticker": "AAPL","timestamp": "2016-01-01T15:02:25Z","open": 101.2,"high": 101.3,"low": 100,"close": 101,"volume": 500}"""
 
   override def receive = {
-    case Received(data)                 ⇒ {
-      // Send minutes `candles` for last 10 minutes
+    case Received(data)                 ⇒
+      val client = sender()
       log.info(s"Actor path = ${self.path.toString} Received $data from client")
       // Ask actor which can get last records
-      //      val storage = context.system.actorSelection("data-flow-storage").resolveOne()
       val storage = context.actorOf(Props[DataFlowStorage])
+      // At first connection we need `candles` for last 10 minutes
       storage ? Get(10 minutes) onComplete {
         case Success(res) ⇒
-          log.debug(s"Sending $res to ${sender()}")
-          sender ! Write(ByteString(res.asInstanceOf[String]))
+          client ! Write(ByteString(res.asInstanceOf[String]))
           // Schedule to send `candles` each minute
-          context.system.scheduler.scheduleOnce(
-            10 seconds,
-            self,
-            GetRecords(sender, storage)
-          )
-        case Failure(e)   ⇒
-          log.error(s"Data flow storage reading error: ${e.toString}")
-      }
-    }
-    case GetRecords(recipient, storage) ⇒
-      //      val storage = context.system.actorOf(Props[DataFlowStorage])
-      storage ? Get(1 minutes) onComplete {
-        case Success(res) ⇒
-          recipient ! Write(ByteString(res.asInstanceOf[String]))
           context.system.scheduler.schedule(
             5 seconds,
             5 seconds,
             self,
-            GetRecords(recipient, storage)
+            GetRecords(client, storage)
           )
         case Failure(e)   ⇒
-          log.error(s"Data flow storage reading error: ${e.toString}")
+          log.error(s"Data flow storage reading error: ${e.getStackTrace}")
+      }
+    case GetRecords(recipient, storage) ⇒
+      storage ? Get(1 minutes) onComplete {
+        case Success(res) ⇒
+          recipient ! Write(ByteString(res.asInstanceOf[String]))
+        case Failure(e)   ⇒
+          log.error(s"Data flow storage reading error: ${e.getStackTrace}")
       }
     case _: ConnectionClosed            ⇒
       context.stop(self)
